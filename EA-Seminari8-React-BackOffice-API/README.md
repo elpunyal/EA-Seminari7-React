@@ -198,15 +198,35 @@ si un día se cambiara Express por otro framework, esas dos carpetas no habría 
 |---|---|---|---|
 | GET | `/ping` | Comprueba que la API está viva | |
 | POST | `/authors` | Crea un autor | `{ "name": "...", "email": "...", "password": "..." }` |
-| GET | `/authors` | Lista todos los autores | |
+| GET | `/authors` | Lista todos los autores. Con `?page=1&limit=4&q=texto` devuelve solo una página | |
 | GET | `/authors/:authorId` | Devuelve un autor | |
 | PUT | `/authors/:authorId` | Reemplaza los datos de un autor | `{ "name": "...", "email": "...", "password": "..." }` |
 | DELETE | `/authors/:authorId` | Borra un autor (borrado lógico) | |
 | POST | `/books` | Crea un libro | `{ "title": "...", "authors": ["<id de un autor>"], "isbn": "..." }` |
-| GET | `/books` | Lista todos los libros, con los datos de sus autores | |
+| GET | `/books` | Lista todos los libros, con los datos de sus autores. Con `?page=1&limit=4&q=texto` devuelve solo una página | |
 | GET | `/books/:bookId` | Devuelve un libro, con los datos de sus autores | |
 | PUT | `/books/:bookId` | Reemplaza los datos de un libro | `{ "title": "...", "authors": ["<id de un autor>"], "isbn": "..." }` |
 | DELETE | `/books/:bookId` | Borra un libro (borrado lógico) | |
+
+### Paginación
+
+Los dos listados se pueden pedir por páginas añadiendo `page` y `limit` a la URL, y `q` para buscar
+(en autores busca en el nombre y el email; en libros, en el título, el ISBN y la descripción):
+
+```
+curl "http://localhost:1337/books?page=2&limit=4"
+curl "http://localhost:1337/authors?page=1&limit=4&q=cervantes"
+```
+
+La respuesta trae la página y los datos para pintar la paginación:
+
+```json
+{ "books": [ ... ], "total": 12, "page": 2, "limit": 4, "totalPages": 3 }
+```
+
+Si no se manda `page` ni `limit` se devuelve la lista completa, igual que antes, así que los clientes que
+ya usaban la API siguen funcionando. `limit` vale 10 si no se indica y como máximo 100. La lógica está en
+`src/library/Pagination.ts` y en `getAuthorsPage` / `getBooksPage` de los services.
 
 Un autor tiene además estos campos opcionales: `birthDate`, `nationality`, `biography`, `website`,
 `photoUrl`, `active` y `role`. La contraseña nunca se devuelve en las respuestas.
