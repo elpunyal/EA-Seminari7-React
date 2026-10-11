@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { readPageQuery } from '../library/Pagination';
 import BookService from '../services/BookService';
 
 // Función para crear un libro nuevo
@@ -42,7 +43,15 @@ const readBook = async (req: Request<{ bookId: string }>, res: Response, next: N
 // Función para obtener todos los libros
 const readAll = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Pedimos al servicio la lista completa de libros
+        // Si en la URL llega page o limit devolvemos solo esa pagina, con el total para saber cuantas hay
+        const pageQuery = readPageQuery(req.query);
+
+        if (pageQuery) {
+            res.status(200).json(await BookService.getBooksPage(pageQuery));
+            return;
+        }
+
+        // Sin esos parametros pedimos al servicio la lista completa de libros, como hasta ahora
         const books = await BookService.getAllBooks();
 
         // Devolvemos los libros con un codigo 200

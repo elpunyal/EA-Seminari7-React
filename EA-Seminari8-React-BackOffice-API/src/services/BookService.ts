@@ -1,3 +1,4 @@
+import { PageQuery, searchRegex } from '../library/Pagination';
 import Book, { IBook } from '../models/Book';
 
 // Funcion que se encarga de crear un libro en la base de datos
@@ -23,6 +24,29 @@ export const getAllBooks = () => {
     return Book.find({ deleted: false }).populate('authors');
 };
 
+// Funcion que busca solo una pagina de libros (paginacion en el backend).
+// Si llega texto del buscador (q) nos quedamos con los libros que lo tienen en el titulo, el ISBN o la descripcion.
+export const getBooksPage = async ({ page, limit, q }: PageQuery) => {
+    const filter = q ? { deleted: false, $or: [{ title: searchRegex(q) }, { isbn: searchRegex(q) }, { description: searchRegex(q) }] } : { deleted: false };
+
+    // Contamos cuantos libros cumplen el filtro para saber cuantas paginas hay
+    const total = await Book.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    // Si piden una pagina que ya no existe (por ejemplo despues de borrar) devolvemos la ultima
+    const currentPage = Math.min(page, totalPages);
+
+    // skip salta los libros de las paginas anteriores y limit coge solo los de esta.
+    // Ordenamos por _id para que las paginas salgan siempre en el mismo orden.
+    const books = await Book.find(filter)
+        .sort({ _id: 1 })
+        .skip((currentPage - 1) * limit)
+        .limit(limit)
+        .populate('authors');
+
+    return { books, total, page: currentPage, limit, totalPages };
+};
+
 // Funcion que se encarga de actualizar un libro
 export const updateBook = (bookId: string, data: IBook) => {
     // Buscamos el libro por su ID y actualizamos sus datos.
@@ -46,6 +70,8 @@ export default {
     getBookById,
 
     getAllBooks,
+
+    getBooksPage,
 
     updateBook,
 

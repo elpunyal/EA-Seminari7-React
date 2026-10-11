@@ -62,7 +62,11 @@ router.get('/:bookId', ValidateId('bookId'), controller.readBook);
  * /books:
  *   get:
  *     tags: [Books]
- *     summary: Lista todos los libros, con los datos de sus autores
+ *     summary: Lista los libros con los datos de sus autores (todos, o una página si se indica page o limit)
+ *     parameters:
+ *       - { in: query, name: page, schema: { type: integer, minimum: 1 }, description: 'Página que se pide. Si llega page o limit, la respuesta trae solo esa página' }
+ *       - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100 }, description: 'Elementos por página (10 si no se indica)' }
+ *       - { in: query, name: q, schema: { type: string }, description: 'Texto a buscar en el título, el ISBN o la descripción (solo con paginación)' }
  *     responses:
  *       200: { $ref: '#/components/responses/BookList' }
  *       500: { $ref: '#/components/responses/ServerError' }
