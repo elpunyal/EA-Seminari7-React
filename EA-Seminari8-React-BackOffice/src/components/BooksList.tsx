@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react';
 import { Link } from 'react-router-dom';
 
 import { useToast } from '../context/ToastContext';
-import { useApiList } from '../hooks/useApiList';
+import { useApiPage } from '../hooks/useApiPage';
 import { useListControls } from '../hooks/useListControls';
 import type { Book } from '../models';
 import { bookService } from '../services/book.service';
@@ -17,15 +17,6 @@ import { ViewToggle } from './ViewToggle';
 // Libros que se ven en cada página de la tabla
 const PAGE_SIZE = 4;
 
-// Me quedo con los libros cuyo título, ISBN o descripción contiene lo que se ha escrito
-function matchesBook(book: Book, text: string) {
-  return (
-    book.title.toLowerCase().includes(text) ||
-    book.isbn.toLowerCase().includes(text) ||
-    (book.description?.toLowerCase().includes(text) ?? false)
-  );
-}
-
 // Lista de autores de un libro. Si se borra el único autor, la API lo devuelve sin autores
 function authorNames(book: Book) {
   return book.authors.length > 0 ? book.authors.map((author) => author.name).join(', ') : null;
@@ -35,12 +26,16 @@ export function BooksList() {
   const { showToast } = useToast();
   const viewMode = useStore(booksView);
 
-  const { items: books, loading, error: loadError, removeItem } = useApiList(bookService.getBooks);
-  const { search, setSearch, page, setPage, totalPages, pageItems } = useListControls(
-    books,
-    matchesBook,
-    PAGE_SIZE,
-  );
+  const { search, searchText, setSearch, page: requestedPage, setPage } = useListControls();
+  // Paginación en el backend: la API busca (título, ISBN o descripción) y devuelve solo esta página
+  const {
+    items: pageItems,
+    page,
+    totalPages,
+    loading,
+    error: loadError,
+    reload,
+  } = useApiPage(bookService.getBooksPage, requestedPage, PAGE_SIZE, search);
 
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
   const [actionError, setActionError] = useState('');
@@ -58,7 +53,7 @@ export function BooksList() {
     setActionError('');
     try {
       await bookService.deleteBook(bookToDelete._id);
-      removeItem(bookToDelete._id);
+      reload();
       showToast(`Libro "${bookToDelete.title}" borrado`);
     } catch (err) {
       setActionError(errorMessage(err));
@@ -84,7 +79,7 @@ export function BooksList() {
           type="search"
           placeholder="Buscar por título, ISBN o descripción"
           aria-label="Buscar libros"
-          value={search}
+          value={searchText}
           onChange={(e) => setSearch(e.target.value)}
         />
         <ViewToggle mode={viewMode} onChange={(mode) => booksView.set(mode)} />
@@ -94,7 +89,7 @@ export function BooksList() {
 
       {loading && <p className="muted">Cargando...</p>}
 
-      {!loading && (!error || books.length > 0) && (
+      {!loading && (!error || pageItems.length > 0) && (
         <>
           {viewMode === 'list' ? (
             <table>

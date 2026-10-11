@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 interface Toast {
@@ -26,8 +26,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), 3000);
   }, []);
 
+  // useMemo: el objeto del contexto se crea una sola vez. Con un objeto nuevo en cada render,
+  // todos los componentes que usan useToast() se volverían a pintar cada vez que sale un aviso
+  const value = useMemo(() => ({ showToast }), [showToast]);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div className="toasts" role="status">
         {toasts.map((toast) => (

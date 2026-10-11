@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useToast } from '../context/ToastContext';
-import { useApiList } from '../hooks/useApiList';
+import { useApiPage } from '../hooks/useApiPage';
 import { useListControls } from '../hooks/useListControls';
 import type { Author } from '../models';
 import { authorService } from '../services/author.service';
@@ -18,12 +18,6 @@ import { ViewToggle } from './ViewToggle';
 // Autores que se ven en cada página de la tabla
 const PAGE_SIZE = 4;
 
-// Me quedo con los autores cuyo nombre o email contiene lo que se ha escrito.
-// Está fuera del componente para que sea siempre la misma función (ver useListControls)
-function matchesAuthor(author: Author, text: string) {
-  return author.name.toLowerCase().includes(text) || author.email.toLowerCase().includes(text);
-}
-
 export function AuthorsList() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -31,16 +25,18 @@ export function AuthorsList() {
   // Estado global (Nanostores): tabla o tarjetas. Se guarda solo en el navegador
   const viewMode = useStore(authorsView);
 
-  // Datos de la API (custom hook con useReducer dentro)
-  const { items: authors, loading, error: loadError, removeItem } = useApiList(
-    authorService.getAuthors,
-  );
   // Búsqueda y página, guardadas en la URL
-  const { search, setSearch, page, setPage, totalPages, pageItems } = useListControls(
-    authors,
-    matchesAuthor,
-    PAGE_SIZE,
-  );
+  const { search, searchText, setSearch, page: requestedPage, setPage } = useListControls();
+  // Datos de la API (custom hook con useReducer dentro). Paginación en el backend: solo se pide
+  // la página que se ve, y el filtro del buscador (nombre o email) también lo hace la API
+  const {
+    items: pageItems,
+    page,
+    totalPages,
+    loading,
+    error: loadError,
+    reload,
+  } = useApiPage(authorService.getAuthorsPage, requestedPage, PAGE_SIZE, search);
 
   const [authorToDelete, setAuthorToDelete] = useState<Author | null>(null);
   const [actionError, setActionError] = useState('');
@@ -65,7 +61,7 @@ export function AuthorsList() {
     setActionError('');
     try {
       await authorService.deleteAuthor(authorToDelete._id);
-      removeItem(authorToDelete._id);
+      reload();
       showToast(`Autor "${authorToDelete.name}" borrado`);
     } catch (err) {
       setActionError(errorMessage(err));
@@ -92,7 +88,7 @@ export function AuthorsList() {
           type="search"
           placeholder="Buscar por nombre o email"
           aria-label="Buscar autores"
-          value={search}
+          value={searchText}
           onChange={(e) => setSearch(e.target.value)}
         />
         <ViewToggle mode={viewMode} onChange={(mode) => authorsView.set(mode)} />
@@ -102,7 +98,7 @@ export function AuthorsList() {
 
       {loading && <p className="muted">Cargando...</p>}
 
-      {!loading && (!error || authors.length > 0) && (
+      {!loading && (!error || pageItems.length > 0) && (
         <>
           {viewMode === 'list' ? (
             <table>

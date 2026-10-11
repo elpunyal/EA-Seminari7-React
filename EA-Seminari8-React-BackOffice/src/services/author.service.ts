@@ -1,8 +1,15 @@
-import type { Author, CreateAuthor, UpdateAuthor } from '../models';
-import { request } from './http';
+import type { Author, CreateAuthor, Page, PageQuery, UpdateAuthor } from '../models';
+import { pageParams, request } from './http';
 
 interface AuthorListResponse {
   authors: Author[];
+}
+
+// Cuando se pide paginado, la API añade el total y las páginas que hay
+interface AuthorPageResponse extends AuthorListResponse {
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 interface AuthorResponse {
@@ -15,6 +22,15 @@ export const authorService = {
   /** GET /authors */
   getAuthors: (signal?: AbortSignal) =>
     request<AuthorListResponse>('/authors', { signal }).then((res) => res.authors),
+
+  /** GET /authors?page=1&limit=4&q=texto: solo una página. Busca y pagina la API */
+  getAuthorsPage: (query: PageQuery, signal?: AbortSignal): Promise<Page<Author>> =>
+    request<AuthorPageResponse>(`/authors?${pageParams(query)}`, { signal }).then((res) => ({
+      items: res.authors,
+      total: res.total,
+      page: res.page,
+      totalPages: res.totalPages,
+    })),
 
   /** GET /authors/:id */
   getAuthor: (id: string, signal?: AbortSignal) =>

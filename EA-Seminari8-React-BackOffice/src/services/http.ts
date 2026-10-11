@@ -1,4 +1,5 @@
 import { environment } from '../config/environment';
+import type { PageQuery } from '../models';
 
 // Error de la API con su código HTTP. status 0 = la petición ni siquiera ha llegado a la API
 export class ApiError extends Error {
@@ -38,4 +39,13 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     return undefined as T;
   }
   return res.json() as Promise<T>;
+}
+
+// La parte ?page=2&limit=4&q=texto de la URL con la que se pide una página de un listado
+export function pageParams({ page, limit, q }: PageQuery): string {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (q) {
+    params.set('q', q);
+  }
+  return params.toString();
 }
