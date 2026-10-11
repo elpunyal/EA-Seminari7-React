@@ -1,8 +1,14 @@
-import type { Book, CreateBook, UpdateBook } from '../models';
-import { request } from './http';
+import type { Book, CreateBook, Page, PageQuery, UpdateBook } from '../models';
+import { pageParams, request } from './http';
 
 interface BookListResponse {
   books: Book[];
+}
+
+interface BookPageResponse extends BookListResponse {
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 interface BookResponse {
@@ -13,6 +19,15 @@ export const bookService = {
   /** GET /books */
   getBooks: (signal?: AbortSignal) =>
     request<BookListResponse>('/books', { signal }).then((res) => res.books),
+
+  /** GET /books?page=1&limit=4&q=texto: solo una página. Busca y pagina la API */
+  getBooksPage: (query: PageQuery, signal?: AbortSignal): Promise<Page<Book>> =>
+    request<BookPageResponse>(`/books?${pageParams(query)}`, { signal }).then((res) => ({
+      items: res.books,
+      total: res.total,
+      page: res.page,
+      totalPages: res.totalPages,
+    })),
 
   /** GET /books/:id */
   getBook: (id: string, signal?: AbortSignal) =>

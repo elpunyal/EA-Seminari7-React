@@ -1,3 +1,4 @@
+import { PageQuery, searchRegex } from '../library/Pagination';
 import Author, { IAuthor } from '../models/Author';
 
 // Funcion que se encarga de crear un autor en la base de datos
@@ -26,6 +27,30 @@ export const getAllAuthors = () => {
     // Devolvemos todos los autores que hay guardados.
     // Filtramos deleted: false para dejar fuera los autores borrados logicamente.
     return Author.find({ deleted: false });
+
+};
+
+// Funcion que busca solo una pagina de autores (paginacion en el backend).
+// Si llega texto del buscador (q) nos quedamos con los autores que lo tienen en el nombre o en el email.
+export const getAuthorsPage = async ({ page, limit, q }: PageQuery) => {
+
+    const filter = q ? { deleted: false, $or: [{ name: searchRegex(q) }, { email: searchRegex(q) }] } : { deleted: false };
+
+    // Contamos cuantos autores cumplen el filtro para saber cuantas paginas hay
+    const total = await Author.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    // Si piden una pagina que ya no existe (por ejemplo despues de borrar) devolvemos la ultima
+    const currentPage = Math.min(page, totalPages);
+
+    // skip salta los autores de las paginas anteriores y limit coge solo los de esta.
+    // Ordenamos por _id para que las paginas salgan siempre en el mismo orden.
+    const authors = await Author.find(filter)
+        .sort({ _id: 1 })
+        .skip((currentPage - 1) * limit)
+        .limit(limit);
+
+    return { authors, total, page: currentPage, limit, totalPages };
 
 };
 
@@ -73,6 +98,8 @@ export default {
     getAuthorById,
 
     getAllAuthors,
+
+    getAuthorsPage,
 
     updateAuthor,
 

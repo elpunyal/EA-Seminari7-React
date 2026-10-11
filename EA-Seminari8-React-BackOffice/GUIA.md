@@ -92,7 +92,7 @@ lista completa está en el [README](README.md#scripts).
 |---|---|
 | `public/` | Ficheros estáticos que se sirven tal cual (el favicon) |
 | `src/components/` | Los componentes: pantallas y piezas reutilizables |
-| `src/hooks/` | Hooks propios (`useApiList`, `useListControls`, `useForm`) |
+| `src/hooks/` | Hooks propios (`useApiList`, `useApiPage`, `useListControls`, `useForm`) |
 | `src/services/` | La capa de servicio: las llamadas a la API |
 | `src/context/` y `src/stores/` | Estado global |
 | `src/models/`, `src/utils/`, `src/config/` | Tipos, funciones sueltas y ajustes |
@@ -297,6 +297,7 @@ Así se ve el ciclo de vida (*muntatge, actualització i neteja*): montaje (el e
 Sitios donde se usa:
 
 - `useApiList.ts`: pide la lista a la API al montar la pantalla.
+- `useApiPage.ts`: pide una página de la lista, y lo repite cuando cambia la página o el buscador.
 - `AuthorForm.tsx` y `BookForm.tsx`: piden el autor o libro a editar cuando cambia el `:id`.
 - `ConfirmModal.tsx`: mientras el modal está abierto escucha la tecla Escape, y la limpieza quita el listener.
 
@@ -362,14 +363,45 @@ El recorrido de una petición, desde que se entra en Autores hasta MongoDB y vue
 
 ```
 AuthorsList (se monta)
-  -> useApiList: useEffect
-    -> authorService.getAuthors()
-      -> request(): fetch GET http://localhost:1337/authors
+  -> useApiPage: useEffect
+    -> authorService.getAuthorsPage({ page: 1, limit: 4, q: '' })
+      -> request(): fetch GET http://localhost:1337/authors?page=1&limit=4
         -> API del S5: router -> middleware -> controller -> service -> model
-          -> MongoDB
-        <- { authors: [...] }
+          -> MongoDB (skip + limit)
+        <- { authors: [...], total: 5, page: 1, totalPages: 2 }
     <- dispatch({ type: 'loaded' }) -> React vuelve a pintar la tabla
 ```
+
+### Paginación en el backend
+
+Las listas no traen todos los elementos para luego cortarlos en el navegador: piden a la API solo la página
+que se ve. En la URL de la petición van la página, cuántos elementos caben y el texto del buscador
+(`/authors?page=2&limit=4&q=cervantes`), y la API contesta con esa página y con el total:
+
+```ts
+// Backend, src/services/AuthorService.ts
+const total = await Author.countDocuments(filter);       // cuántos hay, para saber las páginas
+const authors = await Author.find(filter)
+  .sort({ _id: 1 })
+  .skip((currentPage - 1) * limit)                       // salta las páginas anteriores
+  .limit(limit);                                         // y coge solo los de esta
+```
+
+En React el hook `useApiPage` tiene la página y el texto en las dependencias de su `useEffect`, así que cada
+vez que cambian se hace una petición nueva (y la anterior se cancela con el `AbortController`):
+
+```ts
+// src/hooks/useApiPage.ts
+useEffect(() => {
+  const controller = new AbortController();
+  fetchPage({ page, limit, q }, controller.signal).then((result) => dispatch({ type: 'loaded', result }));
+  return () => controller.abort();
+}, [fetchPage, page, limit, q, version]);
+```
+
+El buscador no lanza una petición por cada letra: `useListControls` espera a que se deje de escribir un
+momento (300 ms) antes de poner el texto en la URL. Si la API recibe la petición sin `page` ni `limit` devuelve
+la lista entera, que es lo que usa el formulario de libros para el desplegable de autores (`useApiList`).
 
 ### useRef
 
@@ -434,15 +466,16 @@ ni Nanostores hacen falta para algo tan pequeño, pero sirven para ver las dos f
 
 ### useMemo (bonus)
 
-`useMemo` guarda el resultado de un cálculo caro y solo lo repite si cambian sus dependencias. Se usa en el
-filtro de las listas (`useListControls.ts`):
+`useMemo` guarda el resultado de un cálculo y solo lo repite si cambian sus dependencias. Sirve para cálculos
+caros y también para no crear un objeto nuevo en cada render. Se usa en el contexto de los avisos
+(`ToastContext.tsx`):
 
 ```ts
-const filtered = useMemo(() => {
-  const text = search.trim().toLowerCase();
-  return items.filter((item) => matches(item, text));
-}, [items, search, matches]);
+const value = useMemo(() => ({ showToast }), [showToast]);
 ```
+
+Sin el `useMemo`, cada render del provider crearía un objeto distinto y todos los componentes que usan
+`useToast()` se volverían a pintar cada vez que sale un aviso.
 
 Es el equivalente a `computed()` de las signals de Angular, con la diferencia de que hay que escribir las
 dependencias a mano.
@@ -487,7 +520,8 @@ export function Layout() {
 - **`useParams`** lee los parámetros de la ruta: en `/authors/:id/edit`, `const { id } = useParams()`. En
   `/authors/new` no hay `id` y el formulario sirve para crear.
 - **`useSearchParams`** lee y cambia la parte `?q=...&page=2` de la URL. Las listas guardan ahí el buscador y la
-  página (`useListControls.ts`): se pueden compartir, y al pulsar Atrás o recargar no se pierden.
+  página (`useListControls.ts`): se pueden compartir, y al pulsar Atrás o recargar no se pierden. Con esos dos
+  valores se pide la página a la API.
 
 ### Navegación programática: useNavigate
 
@@ -518,17 +552,17 @@ el `id`. En "Editar libro" solo se usa la URL y siempre se pide a la API.
 | Hook | Utilidad | Dónde se ve |
 |---|---|---|
 | `useState` | Estado local de la variable | Todos los componentes |
-| `useReducer` | Estado con varios valores o reglas | `useApiList.ts`, `useForm.ts` |
-| `useEffect` | Efectos secundarios (APIs, timers, listeners) | `useApiList.ts`, formularios, `ConfirmModal.tsx` |
+| `useReducer` | Estado con varios valores o reglas | `useApiList.ts`, `useApiPage.ts`, `useForm.ts` |
+| `useEffect` | Efectos secundarios (APIs, timers, listeners) | `useApiList.ts`, `useApiPage.ts`, formularios, `ConfirmModal.tsx` |
 | `useContext` | Evitar pasar props a través de 5 niveles | `ToastContext.tsx` |
 | `useRef` | Referenciar elementos del DOM o guardar valores que no han de refrescar la UI | Buscadores y formularios |
-| `useMemo` | (Bonus) Optimización de cálculos pesados | `useListControls.ts` |
+| `useMemo` | (Bonus) Optimización de cálculos pesados | `ToastContext.tsx` |
 | `useCallback` | (Bonus) Mantener la misma función entre renders | `useForm.ts`, `ToastContext.tsx` |
 | `useParams`, `useSearchParams`, `useNavigate`, `useLocation` | Hooks de React Router | Listas y formularios |
 
 **Hooks propios.** Un custom hook es una función cuyo nombre empieza por `use` y que usa otros hooks dentro.
-Sirve para reutilizar lógica con estado: `useApiList` lo usan las dos listas y el formulario de libros,
-`useForm` los dos formularios y `useListControls` las dos listas.
+Sirve para reutilizar lógica con estado: `useApiPage` y `useListControls` los usan las dos listas, `useApiList`
+el formulario de libros (para el desplegable de autores) y `useForm` los dos formularios.
 
 **Reglas de los hooks:** solo se llaman en el nivel superior de un componente (o de otro hook), nunca dentro
 de un `if` o de un bucle, y siempre en el mismo orden.

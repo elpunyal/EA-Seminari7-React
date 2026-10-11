@@ -78,6 +78,19 @@ export const environment = {
 
 El texto del buscador y la página están en la URL (`/authors?q=cervantes&page=2`).
 
+## Paginación en el backend
+
+Las listas no se traen enteras: cada pantalla pide a la API solo la página que se ve
+(`GET /authors?page=2&limit=4&q=cervantes`) y la API devuelve esos elementos y cuántas páginas hay.
+El buscador también lo resuelve la API, porque si no solo se buscaría dentro de la página que hay
+en pantalla.
+
+En principio la idea era no tocar el backend y usar el mismo que en el seminario de Angular, donde la
+paginación se hacía en el navegador. Aun así nos recomendaron que un backoffice pagine en el backend
+por optimización (que no viaje la lista entera en cada petición), así que lo hemos añadido. El cambio
+es compatible con lo que había: si no se manda `page` ni `limit`, la API devuelve la lista completa
+como antes, y el formulario de libros lo sigue usando para el desplegable de autores.
+
 ## Estructura del proyecto
 
 ```
@@ -95,13 +108,14 @@ src/
 │   ├── ViewToggle.tsx     # botones para ver las listas en tabla o en tarjetas
 │   └── Field.tsx          # etiqueta + input + mensaje de error de los formularios
 ├── hooks/
-│   ├── useApiList.ts      # pide una lista a la API (useEffect + useReducer)
-│   ├── useListControls.ts # búsqueda y paginación guardadas en la URL (useMemo)
+│   ├── useApiList.ts      # pide una lista entera a la API (useEffect + useReducer)
+│   ├── useApiPage.ts      # pide a la API solo la página que se ve (paginación en el backend)
+│   ├── useListControls.ts # texto del buscador y página, guardados en la URL
 │   └── useForm.ts         # formularios controlados con validación (useReducer)
 ├── services/
 │   ├── http.ts            # fetch común: errores, JSON y 204
-│   ├── author.service.ts  # getAuthors, getAuthor, createAuthor, updateAuthor, deleteAuthor
-│   └── book.service.ts    # getBooks, getBook, createBook, updateBook, deleteBook
+│   ├── author.service.ts  # getAuthors, getAuthorsPage, getAuthor, createAuthor, updateAuthor, deleteAuthor
+│   └── book.service.ts    # getBooks, getBooksPage, getBook, createBook, updateBook, deleteBook
 ├── context/
 │   └── ToastContext.tsx   # avisos globales con la Context API
 ├── stores/

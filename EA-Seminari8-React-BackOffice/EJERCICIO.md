@@ -18,7 +18,7 @@ Integrar el campo `publisher` en el flujo de la aplicación cliente (BackOffice)
    * Cargar el valor existente al editar un libro que ya disponga de editorial (en el `fill({...})` del `useEffect`).
 3. **Listado y Búsqueda (`src/components/BooksList.tsx`):**
    * Mostrar la editorial en la vista de la tabla de libros (nueva columna `<th>` y `<td>`; acuerdate de subir el `colSpan` de la fila "No hay libros").
-   * Ampliar la función `matchesBook` para que las búsquedas por texto coincidan también con la editorial.
+   * Ampliar la búsqueda para que el texto coincida también con la editorial. La búsqueda la hace la API, así que hay que añadir `publisher` al filtro de `getBooksPage` (`src/services/BookService.ts` del backend).
 4. **Validación:**
    Comprobar que el proyecto compila limpiamente (`npm run build`) y verificar en el navegador el guardado, la visualización y el filtrado del nuevo dato.
 

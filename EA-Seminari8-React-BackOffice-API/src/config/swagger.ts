@@ -71,6 +71,14 @@ const okResponse = (description: string, schema: object, example: object) => ({
     content: { 'application/json': { schema, example } }
 });
 
+// Campos que se añaden a los listados cuando se piden paginados (?page=1&limit=4)
+const pageInfo = {
+    total: { type: 'integer', example: 12 },
+    page: { type: 'integer', example: 1 },
+    limit: { type: 'integer', example: 4 },
+    totalPages: { type: 'integer', example: 3 }
+};
+
 // Una respuesta de error: siempre un message, con un ejemplo del mensaje real
 const errorResponse = (description: string, message: string) => ({
     description,
@@ -110,9 +118,9 @@ const swaggerDocument = swaggerJsdoc({
             },
             responses: {
                 AuthorOne: okResponse('Un autor', { type: 'object', properties: { author: authorSchema } }, { author: authorExample }),
-                AuthorList: okResponse('La lista de autores', { type: 'object', properties: { authors: { type: 'array', items: authorSchema } } }, { authors: [authorExample] }),
+                AuthorList: okResponse('La lista de autores', { type: 'object', properties: { authors: { type: 'array', items: authorSchema }, ...pageInfo } }, { authors: [authorExample] }),
                 BookOne: okResponse('Un libro, con los datos de sus autores', { type: 'object', properties: { book: bookSchema } }, { book: bookExample }),
-                BookList: okResponse('La lista de libros, con los datos de sus autores', { type: 'object', properties: { books: { type: 'array', items: bookSchema } } }, { books: [bookExample] }),
+                BookList: okResponse('La lista de libros, con los datos de sus autores', { type: 'object', properties: { books: { type: 'array', items: bookSchema }, ...pageInfo } }, { books: [bookExample] }),
                 BadRequest: errorResponse('El id de la URL no tiene forma de id de MongoDB', 'authorId no es un id válido'),
                 NotFound: errorResponse('No existe ningún recurso con ese id', 'not found'),
                 Conflict: errorResponse('Ya existe otro recurso con ese email o ese ISBN', 'email ya existe'),

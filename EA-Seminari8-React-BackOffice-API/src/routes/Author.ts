@@ -61,7 +61,11 @@ router.get('/:authorId', ValidateId('authorId'), controller.readAuthor);
  * /authors:
  *   get:
  *     tags: [Authors]
- *     summary: Lista todos los autores
+ *     summary: Lista los autores (todos, o una página si se indica page o limit)
+ *     parameters:
+ *       - { in: query, name: page, schema: { type: integer, minimum: 1 }, description: 'Página que se pide. Si llega page o limit, la respuesta trae solo esa página' }
+ *       - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100 }, description: 'Elementos por página (10 si no se indica)' }
+ *       - { in: query, name: q, schema: { type: string }, description: 'Texto a buscar en el nombre o el email (solo con paginación)' }
  *     responses:
  *       200: { $ref: '#/components/responses/AuthorList' }
  *       500: { $ref: '#/components/responses/ServerError' }
