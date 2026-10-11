@@ -1,0 +1,27 @@
+# Dependencias y compilado
+node_modules
+dist
+*.local
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editores
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.obsidian
+
+# Documentación: solo los .md del seminario
+*.md
+!README.md
+!GUIA.md
+!EJERCICIO.md
+!CAMBIOS_MIGRACION.md
+
+# Sistema
+.DS_Store
+Thumbs.db
