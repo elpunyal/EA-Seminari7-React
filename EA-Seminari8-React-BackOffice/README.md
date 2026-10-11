@@ -1,6 +1,6 @@
 # Backoffice — Autores y libros (React)
 
-Backoffice hecho con React 19, TypeScript y Vite para el Seminario 7 de EA. Es la versión en React del
+Backoffice hecho con React 19, TypeScript y Vite para el Seminario 8 de EA. Es la versión en React del
 backoffice de Angular del Seminario 6: usa **la misma API REST** y tiene las mismas pantallas (listar, buscar,
 paginar, crear, editar y borrar autores y libros, con vista en tabla o en tarjetas).
 
@@ -11,7 +11,7 @@ en [GUIA.md](GUIA.md). Hay un ejercicio propuesto en [EJERCICIO.md](EJERCICIO.md
 
 - [Node.js](https://nodejs.org/) 22.12 o superior.
 - [MongoDB](https://www.mongodb.com/), local o en Atlas, para el backend.
-- El backend arrancado (carpeta `EA-Seminari7-React-BackOffice-API`, es la API del Seminario 5).
+- El backend arrancado (carpeta `EA-Seminari8-React-BackOffice-API`, es la API del Seminario 5).
 - Recomendado: VS Code y la extensión [React Developer Tools](https://react.dev/learn/react-developer-tools) en el navegador.
 
 ## Cómo arrancarlo
@@ -23,7 +23,7 @@ Hacen falta dos terminales: una para la API y otra para React.
 Con MongoDB ya arrancado (o con la URL de Atlas puesta en el `.env`):
 
 ```
-cd EA-Seminari7-React-BackOffice-API
+cd EA-Seminari8-React-BackOffice-API
 npm install
 cp .env.example .env
 npm run seed
@@ -37,7 +37,7 @@ desde cero. Todos los autores de ejemplo tienen la contraseña `seminari5`.
 **2. Frontend (este proyecto)**
 
 ```
-cd EA-Seminari7-React-BackOffice
+cd EA-Seminari8-React-BackOffice
 npm install
 npm run dev
 ```

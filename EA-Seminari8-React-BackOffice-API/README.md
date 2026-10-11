@@ -1,7 +1,7 @@
-# Seminari 7: API REST para el BackOffice de React
+# Seminari 8: API REST para el BackOffice de React
 
 API REST de ejemplo con dos recursos, **autores** y **libros**, organizada en capas
-(rutas, middleware, controllers, services y models). Es la misma API del Seminario 5, reutilizada como backend del BackOffice de React (Seminario 7). Es la base sobre la que el equipo
+(rutas, middleware, controllers, services y models). Es la misma API del Seminario 5, reutilizada como backend del BackOffice de React (Seminario 8). Es la base sobre la que el equipo
 trabaja los objetivos del Seminario 5 de EA:
 
 - Estructura del proyecto
@@ -43,8 +43,8 @@ TypeScript no hace falta instalarlo aparte: viene con las dependencias del proye
 ## Clonar el proyecto
 
 ```
-git clone https://github.com/Martatm18/EA-Seminari5-APIambExpress
-cd EA-Seminari5-APIambExpress
+git clone https://github.com/elpunyal/EA-Seminari8-React
+cd EA-Seminari8-React/EA-Seminari8-React-BackOffice-API
 ```
 
 ## Instalar las dependencias
