@@ -94,7 +94,7 @@ export default function AuthorsList() {
     <div>
       <div className="page-header">
         <h1>Autores</h1>
-        <Link to="/authors/new">Nuevo autor</Link>
+        <button onClick={() => navigate('/authors/new')}>Nuevo autor</button>
       </div>
 
       <div className="toolbar">
